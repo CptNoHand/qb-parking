@@ -1,16 +1,16 @@
 Config                        = {}
 Config.debug                  = true
-Config.Maxcarparking          = 50           -- max allowed cars in world space (Default, dont go to hight)
+Config.Maxcarparking          = 100           -- max allowed cars in world space (Default, dont go to hight)
 Config.DisplayDistance        = 50           -- distence to see test above vehicles
-Config.SoundWhenCloseDoors    = false        -- sound when closing doors
+Config.SoundWhenCloseDoors    = true        -- sound when closing doors
 Config.parkingButton          = 166          -- F5 (vehicle exit and or park)
 
 
 -- 👇 Base config when the server start
 Config.PhoneNotification      = true         -- 👉 Auto turn on when server is starting.
 Config.UseParkingSystem       = true         -- 👉 Auto turn on when server is starting.
-Config.OnlyAllowVipPlayers    = true         -- 👉 I recommend, to use this mod only for vip players....
-Config.HideParkedVehicleNames = false        -- 👉 default is true, if you want to see names just type /park-names on/off if you set this to true it is auto on 
+Config.OnlyAllowVipPlayers    = false         -- 👉 I recommend, to use this mod only for vip players....
+Config.HideParkedVehicleNames = true        -- 👉 default is true, if you want to see names just type /park-names on/off if you set this to true it is auto on 
 
 
 Config.Command = {
