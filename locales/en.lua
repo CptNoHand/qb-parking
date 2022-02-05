@@ -1,13 +1,26 @@
 local Translations = {
     error = {
         ["citizenid_error"]     = "[ERROR] Failed to get player citizenid!",
+        ["mis_id"]              = "[Error] A player ID is required.",
+        ["mis_amount"]          = "[Error] There is no number of vehicles that this player can park.",
+    },
+    commands = {
+        ["addvip"]              = "Add", 
+        ["removevip"]           = "Remove", 
     },
     system = {
         ['enable']              = "Park systen %{type} is now enable",
         ["disable"]             = "Park system %{type} is now disable",
         ["freeforall"]          = "Park system: is now enabled for all players.",
         ["parkvip"]             = "Park system: is now only enabled for VIP.",
-        ["no_permission"]       = "Park systeem: You do not have permission to park.",
+        ["no_permission"]       = "Park system: You do not have permission to park.",
+        ["offline"]             = "Park System is offline",
+        ["update_needed"]       = "Park System is outdated....",
+        ["already_vip"]         = "Player is already a vip!",
+        ["vip_not_found"]       = "Player not found!",
+        ["vip_add"]             = "Player %{username} is added as vip!",
+        ["vip_remove"]          = "Player %{username} is removed as vip!",
+        ["max_allow_reached"]   = "The maximum number of packed vehicles for you is %{max}",
     },
     success = {
         ["parked"]              = "Your car is packed",
@@ -25,11 +38,12 @@ local Translations = {
         ["must_own_car"]        = "You must own the car to park it.",
         ["has_take_the_car"]    = "Your vehicle has been removed from the parking zone",
         ["only_cars_allowd"]    = "You can only park cars here",
+        ["stop_car"]            = "Stop your vehicle before you park",
     },
     mail = {
         ["sender"]              = "%{company}",
         ["subject"]             = "Parked %{model}",
-        ["message"]             = "Hey, %{username}<br /><br />Thank you for trusting our parking lot!<br /><br />To make sure you don't forget where you packed your car.<br />Will you also receive a reminder e-mail with license plate and the location where you packed your car approximately<br /><br />Owner: %{username}<br />Model: %{model}<br />Plate: %{plate}<br />Location:%{street}<br /><br/><br/>%{company}",
+        ["message"]             = "Hey, %{username}<br /><br />Thank you for trusting our parking lot!<br /><br />To make sure you don't forget where you parked your car.<br />Will you also receive a reminder e-mail with license plate and the location where you parked your car approximately<br /><br />Owner: %{username}<br />Model: %{model}<br />Plate: %{plate}<br />Location:%{street}<br /><br/><br/>%{company}",
     },
 }
 

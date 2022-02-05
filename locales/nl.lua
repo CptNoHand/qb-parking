@@ -1,6 +1,12 @@
 local Translations = {
     error = {
         ["citizenid_error"]     = "[ERROR] Failed to get player citizenid!",
+        ["mis_id"]              = "[Error] Er is een speler id nodig.",
+        ["mis_amount"]          = "[Error] Er is geen aantal voertuigen dat deze speler kan parkeren ingevored.",
+    },
+    commands = {
+        ["addvip"]              = "Add", 
+        ["removevip"]           = "Remove", 
     },
     system = {
         ['enable']              = "Park systeen %{type} is nu enable",
@@ -8,6 +14,13 @@ local Translations = {
         ["freeforall"]          = "Park systeem: ingeschakelt voor iedereen.",
         ["parkvip"]             = "Park systeem: ingeschakelt alleen voor VIP.",
         ["no_permission"]       = "Park systeem: Je hebt geen rechten om te mogen parkeren.",
+        ["offline"]             = "Park Systeem is offline",
+        ["update_needed"]       = "Park Systeem is verouderd....",
+        ["already_vip"]         = "Player is al een vip!",
+        ["vip_not_found"]       = "Player niet gevonden!",
+        ["vip_add"]             = "Player %{username} is toegevoegd als vip!",
+        ["vip_remove"]          = "Player %{username} is toegevoegd als vip!",
+        ["max_allow_reached"]   = "Het maximale aantal bepakte voertuigen voor jouw is %{max}",
     },
     success = {
         ["parked"]              = "Je auto is gepakeerd",
@@ -25,6 +38,7 @@ local Translations = {
         ["must_own_car"]        = "Je moet de auto bezitten om hem te kunnen parkeren.",
         ["has_take_the_car"]    = "Jou voertuig is uit de pakeer zone gehaalt",
         ["only_cars_allowd"]    = "Je kunt hier alleen auto's parkeren",
+        ["stop_car"]            = "Stop het voertuig voor dat je het wilt parkeren...",
     },
     mail = {
         ["sender"]              = "%{company}",
