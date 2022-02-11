@@ -21,6 +21,7 @@ local Translations = {
         ["vip_add"]             = "Player %{username} is added as vip!",
         ["vip_remove"]          = "Player %{username} is removed as vip!",
         ["max_allow_reached"]   = "The maximum number of packed vehicles for you is %{max}",
+        ["park_or_drive"]       = "Park or Drive",
     },
     success = {
         ["parked"]              = "Your car is packed",
@@ -39,6 +40,8 @@ local Translations = {
         ["has_take_the_car"]    = "Your vehicle has been removed from the parking zone",
         ["only_cars_allowd"]    = "You can only park cars here",
         ["stop_car"]            = "Stop your vehicle before you park",
+        ["police_info"]         = "~r~Police~s~ Vehicle Info\n",
+        ["citizen_info"]        = "~g~Citizen~s~ Vehicle Info\n",
     },
     mail = {
         ["sender"]              = "%{company}",

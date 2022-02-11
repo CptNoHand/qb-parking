@@ -1,6 +1,5 @@
 local QBCore             = exports['qb-core']:GetCoreObject()
 local PlayerData         = {}
-local PlayerJob          = {}
 local LocalVehicles      = {}
 local GlobalVehicles     = {}
 local UpdateAvailable    = false
@@ -9,17 +8,39 @@ local isUsingParkCommand = false
 local IsDeleting         = false
 local OnDuty             = false
 local InParking          = false
-local Citizenid          = nil
 local LastUsedPlate      = nil
 local VehicleEntity      = nil
 local action             = 'none'
 
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    PlayerData = QBCore.Functions.GetPlayerData()
+end)
+RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
+    PlayerJob = job
+end)
+RegisterNetEvent('QBCore:Client:SetDuty', function(duty)
+    OnDuty = duty
+end)
+RegisterNetEvent('QBCore:Player:SetPlayerData', function(data)
+    PlayerData = data
+end)
+
 --------------------------------------------Local Functions--------------------------------------------
-local function CreateParkDisPlay(vehicleData)
-    local owner = string.format(Lang:t("info.owner", {owner = vehicleData.citizenname}))..'\n'
-    local model = string.format(Lang:t("info.model", {model = vehicleData.model}))..'\n'
-    local plate = string.format(Lang:t("info.plate", {plate = vehicleData.plate}))..'\n'
-    return string.format("%s", model..plate..owner)
+local function CreateParkDisPlay(vehicleData, type)
+    local info = nil
+    if type == 'police' then
+        local owner = string.format(Lang:t("info.owner", {owner = vehicleData.citizenname}))..'\n'
+        local model = Lang:t('info.police_info')..string.format(Lang:t("info.model", {model = vehicleData.model}))..'\n'
+        local plate = string.format(Lang:t("info.plate", {plate = vehicleData.plate}))..'\n'
+        info = string.format("%s", model..plate..owner)
+    end
+    if type == 'citizen' then
+        local owner = string.format(Lang:t("info.owner", {owner = vehicleData.citizenname}))..'\n'
+        local model = Lang:t('info.citizen_info')..string.format(Lang:t("info.model", {model = vehicleData.model}))..'\n'
+        local plate = string.format(Lang:t("info.plate", {plate = vehicleData.plate}))..'\n'
+        info = string.format("%s", model..plate..owner)
+    end
+    return info
 end
 
 local function PrepareVehicle(entity, vehicleData)
@@ -48,11 +69,13 @@ local function LoadEntity(vehicleData, type)
     QBCore.Functions.SetVehicleProperties(VehicleEntity, vehicleData.vehicle.props)
 	exports[Config.YourFuelExportName]:SetFuel(VehicleEntity, vehicleData.vehicle.health.tank)
     SetVehicleEngineOn(VehicleEntity, false, false, true)
+    SetVehicleDoorsLocked(VehicleEntity, 2)
     if type == 'server' then
 		if not Config.ImUsingOtherKeyScript then
         	TriggerEvent('vehiclekeys:client:SetVehicleOwnerToCitizenid', vehicleData.plate, vehicleData.citizenid)
 		end
 	end
+
     PrepareVehicle(VehicleEntity, vehicleData)
 end
 
@@ -114,18 +137,22 @@ end
 
 --Display Parked Owner Text
 local function DisplayParkedOwnerText()
-    if not HideParkedVehicleNames then -- for performes
+    if HideParkedVehicleNames then -- for performes
 		local pl = GetEntityCoords(PlayerPedId())
 		local displayWhoOwnesThisCar = nil
 		for k, vehicle in pairs(LocalVehicles) do
-			displayWhoOwnesThisCar = CreateParkDisPlay(vehicle)
+			
 			if #(pl - vector3(vehicle.location.x, vehicle.location.y, vehicle.location.z)) < Config.DisplayDistance then
-				if PlayerJob == "police" and OnDuty == true then
+
+				if PlayerData.job.name == "police" and PlayerData.job.onduty then
+                    displayWhoOwnesThisCar = CreateParkDisPlay(vehicle, 'police')
 					Draw3DText(vehicle.location.x, vehicle.location.y, vehicle.location.z - 0.2, displayWhoOwnesThisCar, 0, 0.04, 0.04)
-				end
-				if PlayerData.citizenid == vehicle.citizenid then
-					Draw3DText(vehicle.location.x, vehicle.location.y, vehicle.location.z - 0.2, displayWhoOwnesThisCar, 0, 0.04, 0.04)
-				end
+                else
+                    if PlayerData.citizenid == vehicle.citizenid then
+                        displayWhoOwnesThisCar = CreateParkDisPlay(vehicle, 'citizen')
+                        Draw3DText(vehicle.location.x, vehicle.location.y, vehicle.location.z - 0.2, displayWhoOwnesThisCar, 0, 0.04, 0.04)
+                    end
+                end
 			end
 		end
     end
@@ -148,7 +175,7 @@ end
 local function DeleteLocalVehicle(vehicle)
     if type(LocalVehicles) == 'table' and #LocalVehicles > 0 and LocalVehicles[1] then
 		for i = 1, #LocalVehicles do
-			if vehicle then
+            if type(vehicle.plate) ~= 'nil' and type(LocalVehicles[i]) ~= 'nil' and type(LocalVehicles[i].plate) ~= 'nil' then
 				if vehicle.plate == LocalVehicles[i].plate then
 					DeleteEntity(LocalVehicles[i].entity)
 					table.remove(LocalVehicles, i)
@@ -223,12 +250,6 @@ local function DisplayHelpText(text)
     AddTextComponentString(text)
     DisplayHelpTextFromStringLabel(0, 0, 1, -1)
 end
--------------------------------------------------------------------------------------------------------
-
-
-
-
-
 
 
 ---------------------------------------------------Drive-----------------------------------------------
@@ -288,20 +309,17 @@ local function Drive(player, vehicle)
         end
     end, vehicle)
 end
--------------------------------------------------------------------------------------------------------
-
-
-
-
 
 --------------------------------------------------Park-------------------------------------------------
 
 local function ParkCar(player, vehicle)
+    SetVehicleEngineOn(vehicle, false, false, true)
     TaskLeaveVehicle(player, vehicle)
+
+    RequestAnimSet("anim@mp_player_intmenu@key_fob@")
     TaskPlayAnim(player, 'anim@mp_player_intmenu@key_fob@', 'fob_click', 3.0, 3.0, -1, 49, 0, false, false)
     Wait(2000)
     ClearPedTasks(player)
-    SetVehicleDoorsLocked(vehicle, 2)
     SetVehicleLights(vehicle, 2)
     Wait(150)
     SetVehicleLights(vehicle, 0)
@@ -311,7 +329,6 @@ local function ParkCar(player, vehicle)
     SetVehicleLights(vehicle, 0)
     TriggerServerEvent("InteractSound_SV:PlayWithinDistance", 5, "lock", 0.3)
 end
-
 
 -- Send Email to the player phone
 local function SendMail(mail_sender, mail_subject, mail_message)
@@ -384,51 +401,27 @@ local function Save(player, vehicle)
         location    = vector4(GetEntityCoords(vehicle).x, GetEntityCoords(vehicle).y, GetEntityCoords(vehicle).z - 0.5, GetEntityHeading(vehicle)),
     })
 end
--------------------------------------------------------------------------------------------------------
+
+---------------------------------------Impound/Stolen/UnPark-------------------------------------------
 
 
 
-
------------------------------------------------Impount-------------------------------------------------
-local function ImpoundVehicle(entity)
+local function ActionVehicle(plate, action)
     for i = 1, #LocalVehicles do
-		if entity == LocalVehicles[i].entity then
-			QBCore.Functions.TriggerCallback("qb-parking:server:impound", function(callback)
-				if callback.status then
-					FreezeEntityPosition(LocalVehicles[i].entity, false)
-					DeleteEntity(LocalVehicles[i].entity)
-					table.remove(LocalVehicles, i)
-				end
-			end, LocalVehicles[i])
-		end
+        if LocalVehicles[i].plate == plate then
+            QBCore.Functions.TriggerCallback("qb-parking:server:vehicle_action", function(callback)
+                if callback.status then
+                    FreezeEntityPosition(LocalVehicles[i].entity, false)
+                    DeleteEntity(LocalVehicles[i].entity)
+                    LocalVehicles[i] = nil
+                end
+            end, LocalVehicles[i].plate, action)
+        end
     end
 end
--------------------------------------------------------------------------------------------------------
-
-
-
------------------------------------------------Stolen Vehicle------------------------------------------
-local function StolenVehicle(entity)
-    for i = 1, #LocalVehicles do
-		if entity == LocalVehicles[i].entity then
-			QBCore.Functions.TriggerCallback("qb-parking:server:stolen", function(callback)
-				if callback.status then
-					FreezeEntityPosition(LocalVehicles[i].entity, false)
-					table.remove(LocalVehicles, i)
-				end
-			end, LocalVehicles[i])
-		end
-    end
-end
--------------------------------------------------------------------------------------------------------
-
-
-
-
-
 
 ------------------------------------------------Commands-----------------------------------------------
-RegisterKeyMapping('park', 'Park or Drive', 'keyboard', Config.KeyBindButton) 
+RegisterKeyMapping('park', Lang:t('system.park_or_drive'), 'keyboard', 'F5') 
 
 RegisterCommand(Config.Command.park, function()
     isUsingParkCommand = true
@@ -437,46 +430,26 @@ end, false)
 RegisterCommand(Config.Command.parknames, function()
     HideParkedVehicleNames = not HideParkedVehicleNames
     if HideParkedVehicleNames then
-        QBCore.Functions.Notify(Lang:t('system.enable', {type = "names"}), "primary", 5000)
-    else
-        QBCore.Functions.Notify(Lang:t('system.disable', {type = "names"}), "primary", 5000)
+        QBCore.Functions.Notify(Lang:t('system.enable', {type = "names"}), "success", 1500)
+    end
+    if not HideParkedVehicleNames then
+        QBCore.Functions.Notify(Lang:t('system.disable', {type = "names"}), "error", 1500)
     end
 end, false)
 
 RegisterCommand(Config.Command.notification, function()
     PhoneNotification = not PhoneNotification
     if PhoneNotification then
-        QBCore.Functions.Notify(Lang:t('system.enable', {type = "notifications"}), "primary", 5000)
-    else
-        QBCore.Functions.Notify(Lang:t('system.disable', {type = "notifications"}), "primary", 5000)
+        QBCore.Functions.Notify(Lang:t('system.enable', {type = "notifications"}), "success", 1500)
+    end
+    if not PhoneNotification then
+        QBCore.Functions.Notify(Lang:t('system.disable', {type = "notifications"}), "error", 1500)
     end
 end, false)
-
--------------------------------------------------------------------------------------------------------
-
 
 
 
 ---------------------------------------------------Events----------------------------------------------
-RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    PlayerData = QBCore.Functions.GetPlayerData()
-    Citizenid = PlayerData.citizenid
-    PlayerJob  = PlayerData.job
-end)
-
-RegisterNetEvent('QBCore:Client:OnJobUpdate', function(JobInfo)
-    PlayerJob = JobInfo
-end)
-
-RegisterNetEvent('QBCore:Client:SetDuty', function(duty)
-    OnDuty = duty
-end)
-
-RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
-    PlayerData = val
-    Citizenid = PlayerData.citizenid
-end)
-
 RegisterNetEvent("qb-parking:client:refreshVehicles", function(vehicles)
     GlobalVehicles = vehicles
     RemoveVehicles(vehicles)
@@ -493,12 +466,16 @@ RegisterNetEvent("qb-parking:client:deleteVehicle", function(vehicle)
     DeleteLocalVehicle(vehicle)
 end)
 
-RegisterNetEvent("qb-parking:client:impoundVehicle",  function(vehicle)
-    ImpoundVehicle(vehicle)
+RegisterNetEvent("qb-parking:client:impound",  function(plate)
+    ActionVehicle(plate, 'impound')
 end)
 
-RegisterNetEvent("qb-parking:client:stolenVehicle",  function(vehicle)
-    StolenVehicle(vehicle)
+RegisterNetEvent("qb-parking:client:stolen",  function(plate)
+    ActionVehicle(plate, 'stolen')
+end)
+
+RegisterNetEvent("qb-parking:client:unpark", function(plate)
+    ActionVehicle(plate, 'unpark')
 end)
 
 RegisterNetEvent("qb-parking:client:isUsingParkCommand", function()
@@ -521,12 +498,9 @@ end)
 
 
 
-
 -------------------------------------------------Thread-------------------------------------------------
 CreateThread(function()
     PlayerData = QBCore.Functions.GetPlayerData()
-    PlayerJob = PlayerData.job
-    Citizenid = PlayerData.citizenid
 end)
 
 CreateThread(function()
@@ -575,7 +549,7 @@ CreateThread(function()
 							if IsThisModelACar(GetEntityModel(vehicle)) or IsThisModelABike(GetEntityModel(vehicle)) or IsThisModelABicycle(GetEntityModel(vehicle)) then
 								Save(player, vehicle)
 							else
-								QBCore.Functions.Notify(Lang:t("info.only_cars_allowd"), "primary", 5000)
+								QBCore.Functions.Notify(Lang:t("info.only_cars_allowd"), "error", 5000)
 							end						
 						end
 					end

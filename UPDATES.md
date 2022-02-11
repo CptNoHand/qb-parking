@@ -1,21 +1,52 @@
 ## ---------------------------------------------Updates------------------------------------------------
+- ✔️ Triggers:  Added a trigger for other scripts, to unpark the vehicles if needed.
+- ✔️ Change: I change from entity to plate.
 
-## Added 👊😉👍 5-2-2022
-- ✔️ Config file is sorter, no Vip or Admin config anymore, everting works with the database now.
-- ✔️ When you give a player a vip, you now also can give a max amount of parking vehicles that is allowed for each player.
-- ✔️ Use: /park-addvid [id] [amount]
+if you are using a other version or you had already one of this triggers below running,
+you must change the vehicle to plate, cause we olny use the plate now and not the hole entity.
 
-## 🥵 You have to update your database 
-- 👇 Use this to update your player_parking_vips table.
-```sql
-ALTER TABLE `player_parking_vips` ADD `maxparking` int(5) NOT NULL DEFAULT 0
-ALTER TABLE `player_parking_vips` ADD `hasparked` int(5) NOT NULL DEFAULT 0 
+## Stolen Trigger, when the vehicle gets stolen by a other player with picklock
+```lua
+ TriggerEvent("qb-parking:client:stolen", plate) 
 ```
 
+## Impound Trigger, to unpark the vehicle.
+```lua
+ TriggerEvent("qb-parking:client:impound", plate) 
+```
 
-
+## Unpark Trigger, to unpark the vehicle, just for other garages scripts.
+```lua
+ TriggerEvent("qb-parking:client:unpark", plate) 
+```
 
 ## ---------------------------------------------Updates------------------------------------------------
+## Added And Fixes 👊😉👍 9-2-2022
+- ✔️ Triggers:  Added a trigger for other scripts, to unpark the vehicles if needed.
+- ✔️ Lock:      You have to unlock the vehicle with [L], cause you alse lock it when you park the vehicle.
+- ✔️ Names:     Parked car names are now correctly visible for police and owner. (for police only if onduty)
+- ✔️ Commands:  /park-system & /park-names is now working correct, and display the correct state. 
+- ✔️ Drive:     You can not drive away anymore when toggle the engine on if the vehicle is parked.
+- ✔️ Inventory: Is not possible anymore, you have you unlock your vehicle to get access.
+
+
+## Stolen Trigger, when the vehicle gets stolen by a other player with picklock
+```lua
+ TriggerEvent("qb-parking:client:stolen', plate) 
+```
+
+## Impound Trigger, to unpark the vehicle.
+```lua
+ TriggerEvent("qb-parking:client:impound', plate) 
+```
+
+## Unpark Trigger, to unpark the vehicle, just for other script if needed.
+```lua
+ TriggerEvent("qb-parking:client:unpark', plate) 
+```
+
+## ---------------------------------------------Updates------------------------------------------------
+
 
 ## You have to add a new Database Table to your database
 ```sql
@@ -23,6 +54,8 @@ CREATE TABLE IF NOT EXISTS `player_parking_vips` (
   `id` int(10) NOT NULL AUTO_INCREMENT,
   `citizenid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `citizenname` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `maxparking` int(5) NOT NULL DEFAULT 0,
+  `hasparked` int(5) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 ```
@@ -68,7 +101,7 @@ Enjoy 👊😉👍
 
 ## 🥵 You have to update your database 
 - 👇 Use this to update your player_parking table
-```sql
+```php
 ALTER TABLE `player_parking` ADD `fuel` int(15) NOT NULL DEFAULT 0
 ```
 
