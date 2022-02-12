@@ -1,4 +1,23 @@
 ## ---------------------------------------------Updates------------------------------------------------
+## Add And Fix 👊😉👍 12-2-2022
+- ✔️ Add Reset State: on server start, vehicles that are not parked and are added to the parking database will be removed now.
+- ✔️ Fix Floating Vehicles: it can happen, that you see that the vehicle get placed on the ground. (the radius is 100 for this event)
+- ✔️ Vehicles are now spawn with damage, if you park it with damage.
+- ✔️ Finally i fixed the fuel.
+
+
+✔️ Again this time you don't have to do anything, just update qb-parking, and you ready to go 👊😉👍
+
+## 😎 Special thanks for helping me with testing 👊😉👍
+- 💪 ameN
+- 💪 MulGirtab
+- 💪 DannyJ
+- 💪 MasonJason310
+- 💪 Enxsistanz
+- 💪 !ExiledVibe!
+- 💪 FARRUKO
+
+## ---------------------------------------------Updates------------------------------------------------
 - ✔️ Triggers:  Added a trigger for other scripts, to unpark the vehicles if needed.
 - ✔️ Change: I change from entity to plate.
 
@@ -117,29 +136,6 @@ ALTER TABLE `player_parking` ADD `fuel` int(15) NOT NULL DEFAULT 0
 
 ## 😎 Special thanks to MulGirtab. 👊😉👍
 - Who help me to test qb-parking with the server restart issues, You're awesome thank you!!
-
-
-## To Fix The qb-garages garage and impound menus
-- This code has to be at lines 467 to 468 
-- Go to resources/[qb]/qb-garages/client/main.lua line 468 and at the end of this line press enter,
-```lua
-elseif v.state == 3 then                                                   -- this has to be on line 467
-    v.state = Lang:t("info.parked")                                        -- this has to be on line 468
-```
-
-- This code has to be at lines 621 to 622
-- Go to resources/[qb]/qb-garages/client/main.lua line 619 and at the end of this line press enter,
-```lua
-elseif vehicle.state == Lang:t("info.parked") then                         -- this has to be on line 621
-    QBCore.Functions.Notify(Lang:t("error.parked_outsite"), "error", 4000) -- this has to be on line 622
-```
-
-- Important!! add the language, go to resources/[qb]/qb-garages/locales/
-- place this in al the languages files, or the language that you use at the moment.
-```lua
-parked_outsite = "You have parked your vecihle outsite...",                -- this wil be line 11 in every language file
-parked         = "Parked Outside",                                         -- this wil be line 23 in every language file
-```
 
 ## 🙈 Youtube & Discord & Twitter 👊😉👍
 - [Youtube](https://www.youtube.com/channel/UC6431XeIqHjswry5OYtim0A)
