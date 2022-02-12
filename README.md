@@ -22,7 +22,7 @@ This is my second mod i make public, so please by kind to my 😁 i still have m
 - ✅ [oxmysql](https://github.com/overextended/oxmysql/releases/tag/v1.9.3)
 - ✅ [qb-core](https://github.com/qbcore-framework/qb-core)
 - ✅ [qb-phone](https://github.com/qbcore-framework/qb-phone)
-- ✅ [qb-garages](https://github.com/qbcore-framework/qb-garages)
+- ✅ [qb-garages](https://github.com/MaDHouSe79/qb-garages)
 - ✅ [qb-vehiclekeys](https://github.com/qbcore-framework/qb-vehiclekeys)
 
 
@@ -37,7 +37,7 @@ This is my second mod i make public, so please by kind to my 😁 i still have m
 - 👉 Step 3: Add the player_parking.sql with 2 tables to your correct database.
 - 👉 Step 4: Add any recommended extra code what I say you should add.
 - 👉 Step 5: If you are 100% sure, you have done all 4 steps correctly, go to step 6.😁
-- 👉 Step 6: Add your self as admin in the config and you can use the command: /park-addvid [id]
+- 👉 Step 6: Add your self as vip, you can use the command: /park-addvip [id] [amount]
 - 👉 Step 7: Start your server. 
 - 👉 Step 8: Most important step -> Enjoy 👊😎👍
 
@@ -61,7 +61,7 @@ This is my second mod i make public, so please by kind to my 😁 i still have m
 - 👉 Typ "/park-names if you want to display the names ontop of the vehicle that is parked. (Users and Admins)
 - 👉 Typ "/park-notification" to turn on or of the phone notification (Users and Admins)
 - 👉 Typ "/park-system" if you want to turn on or off the system. (Admin Only)
-- 👉 Typ "/park-addvip [id]" if you want to add a vip. (Admin Only)
+- 👉 Typ "/park-addvip [id] [amount]" if you want to add a vip. (Admin Only)
 - 👉 Typ "/park-removevip [id]" if you want to remove a vip. (Admin Only)
 - 👉 If you want to use the F5 button, you must add it to your /binds and add on F5 the word "park"
 
@@ -146,7 +146,7 @@ CREATE TABLE `player_parking`  (
   `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
   `time` bigint(20) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT=1 CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 ````
 
 ````sql
@@ -173,7 +173,7 @@ function TakeOutImpound(vehicle)
                 QBCore.Functions.SetVehicleProperties(veh, properties)
                 SetVehicleNumberPlateText(veh, vehicle.plate)
                 SetEntityHeading(veh, coords.w)
-                exports['LegacyFuel']:SetFuel(veh, vehicle.fuel)
+                exports['cc-fuel']:SetFuel(veh, vehicle.fuel)
                 doCarDamage(veh, vehicle)
                 TriggerServerEvent('police:server:TakeOutImpound',vehicle.plate)
                 closeMenuFull()
@@ -196,7 +196,7 @@ function TakeOutImpound(vehicle)
                 QBCore.Functions.SetVehicleProperties(veh, properties)
                 SetVehicleNumberPlateText(veh, vehicle.plate)
                 SetEntityHeading(veh, coords.w)
-                exports['LegacyFuel']:SetFuel(veh, 100.0) -- The Change
+                exports['cc-fuel']:SetFuel(veh, 100.0) -- The Change
                 doCarDamage(veh, vehicle)
                 TriggerServerEvent('police:server:TakeOutImpound',vehicle.plate)
                 closeMenuFull()
@@ -209,20 +209,30 @@ function TakeOutImpound(vehicle)
 end
 ````
 
-## 🦹‍♂️ if you use a picklock or car thief script you must use this trigger
+## Stolen Trigger, when the vehicle gets stolen by a other player with picklock
 ```lua
-TriggerEvent('qb-parking:client:stolenVehicle', vehicle)
+ TriggerEvent("qb-parking:client:stolen", plate) 
+```
+
+## Impound Trigger, to unpark the vehicle.
+```lua
+ TriggerEvent("qb-parking:client:impound", plate) 
+```
+
+## Unpark Trigger, to unpark the vehicle, just for other garages scripts.
+```lua
+ TriggerEvent("qb-parking:client:unpark", plate) 
 ```
 
 ## 👮‍♂️ Impound trigger
-- Go to resources\[qb]\qb-policejob\client.lua line 332
+- Go to resources\[qb]\qb-policejob\client\job.lua line 332
 - Find 👇 
 ````lua
 RegisterNetEvent('police:client:ImpoundVehicle', function(fullImpound, price)
     local vehicle = QBCore.Functions.GetClosestVehicle()
     local bodyDamage = math.ceil(GetVehicleBodyHealth(vehicle))
     local engineDamage = math.ceil(GetVehicleEngineHealth(vehicle))
-    local totalFuel = exports['LegacyFuel']:GetFuel(vehicle)
+    local totalFuel = exports['cc-fuel']:GetFuel(vehicle)
     if vehicle ~= 0 and vehicle then
         local ped = PlayerPedId()
         local pos = GetEntityCoords(ped)
@@ -242,42 +252,19 @@ RegisterNetEvent('police:client:ImpoundVehicle', function(fullImpound, price)
     local vehicle = QBCore.Functions.GetClosestVehicle()
     local bodyDamage = math.ceil(GetVehicleBodyHealth(vehicle))
     local engineDamage = math.ceil(GetVehicleEngineHealth(vehicle))
-    local totalFuel = exports['LegacyFuel']:GetFuel(vehicle)
+    local totalFuel = exports['cc-fuel']:GetFuel(vehicle)
     if vehicle ~= 0 and vehicle then
         local ped = PlayerPedId()
         local pos = GetEntityCoords(ped)
         local vehpos = GetEntityCoords(vehicle)
         if #(pos - vehpos) < 5.0 and not IsPedInAnyVehicle(ped) then
             local plate = QBCore.Functions.GetPlate(vehicle)
-            TriggerEvent('qb-parking:client:impoundVehicle', vehicle) -- <--- impound qb-parking trigger
+            TriggerEvent('qb-parking:client:impound', plate) -- <--- impound qb-parking trigger
             TriggerServerEvent("police:server:Impound", plate, fullImpound, price, bodyDamage, engineDamage, totalFuel)
             QBCore.Functions.DeleteVehicle(vehicle)
         end
     end
 end)
-```
-
-
-## 👇 To Fix The qb-garages garage and impound menus
-- This code has to be at lines 467 to 468
-- Go to resources/[qb]/qb-garages/client/main.lua line 468 and at the end of this line press enter,
-```lua
-elseif v.state == 3 then -- this has to be on line 467
-    v.state = Lang:t("info.parked") -- this has to be on line 468
-```
-
-- This code has to be at lines 621 to 622
-- 👇 Go to resources/[qb]/qb-garages/client/main.lua line 619 and at the end of this line press enter,
-```lua
-elseif vehicle.state == Lang:t("info.parked") then -- this has to be on line 621
-    QBCore.Functions.Notify(Lang:t("error.parked_outsite"), "error", 4000) -- this has to be on line 622
-```
-
-- Important!! add the language, go to resources/[qb]/qb-garages/locales/
-- 👇 place this in al the languages files, or the language that you use at the moment.
-```lua
-parked_outsite = "You have parked your vecihle outsite...", -- (this wil be line 11 in every language file)
-parked         = "Parked Outside",                          -- (this wil be line 23 in every language file)
 ```
 
 

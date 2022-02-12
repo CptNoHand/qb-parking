@@ -81,19 +81,14 @@ local function checkVersion(err, responseText, headers)
     elseif tonumber(curVersion) > tonumber(responseText) then
         print("\n^3----------------------------------------------------------------------------------^7")
         print(resourceName.." git version is: ^2"..responseText.."^7, installed version: ^1"..curVersion.."^7!")
+		print("READ THE UPDATES.md to see if you have to make any changes!!")
         print("^3----------------------------------------------------------------------------------^7")
     else
         print("\n"..resourceName.." is up to date. (^2"..curVersion.."^7)")
     end
 end
 
-
--------------------------------------------------------------------------------------------------
-
-
-
 --------------------------------------------Callbacks--------------------------------------------
-
 -- Save the car to database
 QBCore.Functions.CreateCallback("qb-parking:server:save", function(source, cb, vehicleData)
     if UseParkingSystem then
@@ -105,10 +100,8 @@ QBCore.Functions.CreateCallback("qb-parking:server:save", function(source, cb, v
 			['@citizenid'] = GetCitizenid(Player),
 		}, function(rs)
 			if type(rs) == 'table' and #rs > 0 then
-
 				local hasparked = rs[1].hasparked
 				if hasparked < 0 then hasparked = 1 end
-
 				if hasparked < rs[1].maxparking then
 					FindPlayerVehicles(GetCitizenid(Player), function(vehicles)
 						for k, v in pairs(vehicles) do
@@ -146,6 +139,7 @@ QBCore.Functions.CreateCallback("qb-parking:server:save", function(source, cb, v
 										status  = true, 
 										message = Lang:t("success.parked"),
 									})
+									--Wait(10)
 									TriggerClientEvent("qb-parking:client:addVehicle", -1, {
 										vehicle     = vehicleData,
 										plate       = plate, 
@@ -203,14 +197,13 @@ QBCore.Functions.CreateCallback("qb-parking:server:drive", function(source, cb, 
 				}, function(rs)
 					if type(rs) == 'table' and #rs > 0 and rs[1] then
 						MySQL.Async.execute('DELETE FROM player_parking WHERE plate = @plate AND citizenid = @citizenid', {
-							["@plate"] = plate,
+							["@plate"]     = plate,
 							["@citizenid"] = GetCitizenid(Player)
 						})
 						MySQL.Async.execute('UPDATE player_vehicles SET state = 0 WHERE plate = @plate AND citizenid = @citizenid', {
-						    ["@plate"] = plate,
-						    ["@citizenid"] = GetCitizenid(Player)
+							["@plate"]     = plate,
+							["@citizenid"] = GetCitizenid(Player)
 						})
-
 						MySQL.Async.fetchAll("SELECT * FROM player_parking_vips WHERE citizenid = @citizenid", {
 							['@citizenid'] = GetCitizenid(Player),
 						}, function(rs)
@@ -246,57 +239,34 @@ QBCore.Functions.CreateCallback("qb-parking:server:drive", function(source, cb, 
     end
 end)
 
--- When the police impound the car
-QBCore.Functions.CreateCallback("qb-parking:server:impound", function(source, cb, vehicleData)
-    local src = source
-    local plate = vehicleData.plate
+
+QBCore.Functions.CreateCallback("qb-parking:server:vehicle_action", function(source, cb, plate, action)
     MySQL.Async.fetchAll("SELECT * FROM player_parking WHERE plate = @plate", {
 		['@plate'] = plate
     }, function(rs)
 		if type(rs) == 'table' and #rs > 0 and rs[1] then
-			print("Police impound the vehicle: ", vehicleData.plate, rs[1].citizenid)
-			MySQL.Async.execute('DELETE FROM player_parking WHERE plate = @plate AND citizenid = @citizenid', {
-				["@plate"]     = plate,
-				["@citizenid"] = rs[1].citizenid
-			})
-			MySQL.Async.execute('UPDATE player_vehicles SET state = 2 WHERE plate = @plate AND citizenid = @citizenid', {
-			    ["@plate"] = plate,
-				["@citizenid"] = rs[1].citizenid
-			})
-			MySQL.Async.execute('UPDATE player_parking_vips SET hasparked = hasparked - 1 WHERE citizenid = @citizenid', {
-				["@citizenid"] = rs[1].citizenid
-			})
-			cb({ status = true })
-			TriggerClientEvent("qb-parking:client:deleteVehicle", -1, { plate = plate })
-		else
-			cb({
-				status  = false,
-				message = Lang:t("info.car_not_found"),
-			})
-			print(Lang:t("error"))
-		end
-    end)
-end)
 
-
--- When vehicle gets stolen by other player
-QBCore.Functions.CreateCallback("qb-parking:server:stolen", function(source, cb, vehicleData)
-    local src    = source
-    local plate  = vehicleData.plate
-    MySQL.Async.fetchAll("SELECT * FROM player_parking WHERE plate = @plate", {
-		['@plate'] = plate
-    }, function(rs)
-		if type(rs) == 'table' and #rs > 0 and rs[1] then
-			print("SOmeone stole this vehicle: ", vehicleData.plate, rs[1].citizenid)
 			MySQL.Async.execute('DELETE FROM player_parking WHERE plate = @plate', {
 				["@plate"] = plate,
-			})
-			MySQL.Async.execute('UPDATE player_vehicles SET state = 0 WHERE plate = @plate', {
-				["@plate"] = plate,
-			})
+			})	
+
+			if action == 'impound' then
+				MySQL.Async.execute('UPDATE player_vehicles SET state = 2 WHERE plate = @plate AND citizenid = @citizenid', {
+					["@plate"]     = plate,
+					["@citizenid"] = rs[1].citizenid
+				})
+			end
+
+			if action ~= 'impound' then
+				MySQL.Async.execute('UPDATE player_vehicles SET state = 0 WHERE plate = @plate', {
+					["@plate"] = plate,
+				})
+			end
+
 			MySQL.Async.execute('UPDATE player_parking_vips SET hasparked = hasparked - 1 WHERE citizenid = @citizenid', {
 				["@citizenid"] = rs[1].citizenid
 			})
+
 			cb({ status  = true })
 			TriggerClientEvent("qb-parking:client:deleteVehicle", -1, { plate = plate })
 		else
@@ -309,73 +279,7 @@ QBCore.Functions.CreateCallback("qb-parking:server:stolen", function(source, cb,
     end)
 end)
 
-
 -- Save vip player to database
-QBCore.Functions.CreateCallback("qb-parking:server:AddVip", function(source, cb, id, amount)
-	for k, v in pairs(QBCore.Functions.GetPlayers()) do
-        local player = QBCore.Functions.GetPlayer(v)
-		if tonumber(player.PlayerData.source) == tonumber(id) then
-			MySQL.Async.fetchAll("SELECT * FROM player_parking_vips WHERE citizenid = @citizenid", {
-				['@citizenid'] = GetCitizenid(player),
-			}, function(rs)
-				if type(rs) == 'table' and #rs > 0 then
-					cb({
-						status  = false,
-						message = Lang:t('system.already_vip')
-					})
-				else
-					MySQL.Async.execute("INSERT INTO player_parking_vips (citizenid, citizenname, maxparking) VALUES (@citizenid, @citizenname, @maxparking)", {
-						["@citizenid"]   = GetCitizenid(player),
-						["@citizenname"] = GetUsername(player),
-						["@maxparking"]  = amount 
-					})
-					cb({ 
-						status  = true, 
-						message = Lang:t('system.vip_add', {username = GetUsername(player)}),
-					})
-				end
-			end)
-		else
-			cb({
-				status  = false,
-				message = Lang:t('system.vip_not_found')
-			})
-		end
-	end
-end)
-
-QBCore.Functions.CreateCallback("qb-parking:server:RemoveVip", function(source, cb, id)
-	for k, v in pairs(QBCore.Functions.GetPlayers()) do
-        local player = QBCore.Functions.GetPlayer(v)
-		if tonumber(player.PlayerData.source) == tonumber(id) then
-			MySQL.Async.fetchAll("SELECT * FROM player_parking_vips WHERE citizenid = @citizenid", {
-				['@citizenid'] = GetCitizenid(player),
-			}, function(rs)
-				if type(rs) == 'table' and #rs > 0 then
-					MySQL.Async.execute('DELETE FROM player_parking_vips WHERE citizenid = @citizenid', {
-						["@citizenid"] = GetCitizenid(player),
-					})
-					cb({ 
-						status  = true, 
-						message = Lang:t('system.vip_remove', {username = GetUsername(player)}),
-					})
-				else
-					cb({
-						status  = false,
-						message = Lang:t('system.vip_not_found')
-					})
-				end
-			end)
-		end
-	end
-end)
----------------------------------------------------------------------------------------------------------------
-
-
-
-
-----------------------------------------------Server Admin Commands---------------------------------------------
-
 QBCore.Commands.Add(Config.Command.addvip, Lang:t("commands.addvip"), {{name='ID', help='The id of the player you want to add.'}, {name='Amount', help='The max vehicles amount a player can park'}}, true, function(source, args)
 	if args[1] and tonumber(args[1]) > 0 then
 		local amount = 0 
@@ -416,12 +320,9 @@ QBCore.Commands.Add(Config.Command.removevip, Lang:t("commands.removevip"), {{na
 	end
 end, 'admin')
 
-QBCore.Commands.Add(Config.Command.system, "Park System On/Off", {}, false, function(source, args)
-	if args[1] == "On" then
-		UseParkingSystem = true
-	else
-		UseParkingSystem = false
-	end
+
+QBCore.Commands.Add(Config.Command.system, "Park System On/Off", {}, true, function(source)
+	UseParkingSystem = not UseParkingSystem
 	if UseParkingSystem then
 		TriggerClientEvent('QBCore:Notify', source, Lang:t('system.enable', {type = "system"}), "success")
 	else
@@ -429,10 +330,7 @@ QBCore.Commands.Add(Config.Command.system, "Park System On/Off", {}, false, func
 	end
 end, 'admin')
 
-------------------------------------------------------------------------------------------------------------------------------
-
-
-
+-------------------------------------------------------------------------------------------------
 
 
 if Config.CheckForUpdates then
