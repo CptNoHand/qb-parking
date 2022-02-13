@@ -1,10 +1,39 @@
 ## ---------------------------------------------Updates------------------------------------------------
+## Added Free For All Parking An Fixed 👊😉👍 13-2-2022
+- vehicles that are picklocked are not de-spawn anymore.
+- after lockpick with success, the vehicle stays where it is, and is unparked and driveable.
+- the owner of this vehicle is stil able to drive to get it back.
+- everting thats after the picklock is done, is for other scripts to handle.
+
+
+
+- 👉 Default true, set it to false, but it's not recommended to do that, but if you want you can.
+- Config.UseOnlyForVipPlayers = true (config.lua line:8)       
+
+- New command "/park-usevip" to enable or disable vip system (Admin Only)
+
+
+## ---------------------------------------------Updates------------------------------------------------
+## Needed fix 👊😉👍 12-2-2022
+
+# 👇 Sometime the vehicle spawn on top of each other, and to avoid this you can use this time delay below in de config.lua.
+- Config.UseSpawnDelay -- 👉 Default false, if your vehicles spawn on each other, set this to true
+- Config.DeleteDelay   -- 👉 Default 500, a delay for deleting a vehicle. (works only if Config.UseSpawnDelay = true)
+- Config.FreezeDelay   -- 👉 Default 10, a delay for freezeing a vehicle. (works only if Config.UseSpawnDelay = true)
+
+just play around with it until your fine with it.
+
+## 😎 Special thanks for helping me with testing this 👊😉👍
+- 💪 Jazerra
+
+
+
+## ---------------------------------------------Updates------------------------------------------------
 ## Add And Fix 👊😉👍 12-2-2022
 - ✔️ Add Reset State: on server start, vehicles that are not parked and are added to the parking database will be removed now.
 - ✔️ Fix Floating Vehicles: it can happen, that you see that the vehicle get placed on the ground. (the radius is 100 for this event)
 - ✔️ Vehicles are now spawn with damage, if you park it with damage.
 - ✔️ Finally i fixed the fuel.
-
 
 ✔️ Again this time you don't have to do anything, just update qb-parking, and you ready to go 👊😉👍
 
@@ -27,7 +56,7 @@ you must change the vehicle to plate, cause we olny use the plate now and not th
 
 ## Stolen Trigger, when the vehicle gets stolen by a other player with picklock
 ```lua
- TriggerEvent("qb-parking:client:stolen", plate) 
+ TriggerEvent("qb-parking:client:stolen", lockpickedPlate)
 ```
 
 ## Impound Trigger, to unpark the vehicle.
@@ -51,8 +80,9 @@ you must change the vehicle to plate, cause we olny use the plate now and not th
 
 
 ## Stolen Trigger, when the vehicle gets stolen by a other player with picklock
+-- resources/[qb]/qb-vehiclekeys/client.lua at line 167.(Read the updates.md file what you have to do)
 ```lua
- TriggerEvent("qb-parking:client:stolen', plate) 
+ TriggerEvent("qb-parking:client:stolen", lockpickedPlate)
 ```
 
 ## Impound Trigger, to unpark the vehicle.

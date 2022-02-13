@@ -1,4 +1,12 @@
 Config                        = {}
+
+-- 👇 Sometime the vehicle spawn on top of each other and to avoid this you can use this delay below.
+Config.UseSpawnDelay          = true         -- 👉 Default false, if your vehicles spawn on each other, set this to true
+Config.DeleteDelay            = 500          -- 👉 Default 500, a delay for deleting a vehicle. (works only if Config.UseSpawnDelay = true)
+Config.FreezeDelay            = 10           -- 👉 Default 10, a delay for freezeing a vehicle. (works only if Config.UseSpawnDelay = true)
+
+Config.UseOnlyForVipPlayers   = true         -- 👉 Default true, set it to false, It's not recommended to do that, but if you want you can.
+
 Config.CheckForUpdates        = true         -- 👉 If you want to stay updated keep it on true.
 Config.Maxcarparking          = 250           -- 👉 Max allowed cars in world space (Default, dont go to hight)
 Config.DisplayDistance        = 250.0         -- 👉 Distence to see text above parked vehicles (player dependent)
@@ -6,7 +14,6 @@ Config.DisplayDistance        = 250.0         -- 👉 Distence to see text above
 Config.KeyBindButton          = "F7"         -- 👉 If you want to change the drive and park button. (you must use /binds for this)
 Config.parkingButton          = 166          -- 👉 F5 (vehicle exit and or park)
 Config.useRoleplayName        = true         -- 👉 If you want to use Roleplay name above the cars (firstname lastname) set this on true
-Config.YourFuelExportName     = 'cc-fuel' -- 👉 Default is LegacyFuel, if you use a other fuel script, for example cc-fuel
 
 Config.UseStopSpeedForPark    = true         -- 👉 Default true
 Config.MinSpeedToPark         = 1            -- 👉 Default 1 the min speed to park
@@ -31,6 +38,7 @@ Config.Command = {
     notification = 'park-notification',      -- 👉 User/Admin permission
     vip          = 'park-vip',               -- 👉 Admin permission
     system       = 'park-system',            -- 👉 Admin permission
+    usevip       = 'park-usevip',
     addvip       = 'park-addvip',            -- 👉 Admin permission (/park-addvip [id] [amount])
     removevip    = 'park-removevip'          -- 👉 Admin permission
 }

@@ -229,13 +229,17 @@ local function SpawnVehicles(vehicles)
 		while IsDeleting do Citizen.Wait(100) end
 		if type(vehicles) == 'table' and #vehicles > 0 and vehicles[1] then
 			for i = 1, #vehicles, 1 do
+                SetEntityCollision(vehicles[i].vehicle, false, true)
+                SetEntityVisible(vehicles[i].vehicle, false, 0)
+                if Config.UseSpawnDelay then Wait(Config.DeleteDelay) end
 				DeleteLocalVehicle(vehicles[i].vehicle)
 				LoadEntity(vehicles[i], 'server')
 				SetVehicleEngineOn(VehicleEntity, false, false, true)
 				doCarDamage(VehicleEntity, vehicles[i].vehicle.health)
-				FreezeEntityPosition(VehicleEntity, true)
 				TableInsert(VehicleEntity, vehicles[i])
 				DoAction(action)
+                if Config.UseSpawnDelay then Wait(Config.FreezeDelay) end
+				FreezeEntityPosition(VehicleEntity, true)
 			end
 		end
     end)
@@ -246,17 +250,21 @@ local function SpawnVehicle(vehicleData)
     CreateThread(function()
 		if LocalPlayer.state.isLoggedIn then
 			while IsDeleting do Wait(100) end
+            SetEntityCollision(vehicleData.vehicle, false, true)
+            SetEntityVisible(vehicleData.vehicle, false, 0)
+            if Config.UseSpawnDelay then Wait(Config.DeleteDelay) end
 			DeleteLocalVehicle(vehicleData.vehicle)
 			LoadEntity(vehicleData, 'client')
 			PrepareVehicle(VehicleEntity, vehicleData)
 			SetVehicleEngineOn(VehicleEntity, false, false, true)
 			doCarDamage(VehicleEntity, vehicleData.vehicle.health)
-			FreezeEntityPosition(VehicleEntity, true)
 			if vehicleData.citizenid ~= QBCore.Functions.GetPlayerData().citizenid then
 				SetVehicleDoorsLocked(VehicleEntity, 2)
 			end
 			TableInsert(VehicleEntity, vehicleData)
 			DoAction(action)
+            if Config.UseSpawnDelay then Wait(Config.FreezeDelay) end
+			FreezeEntityPosition(VehicleEntity, true)
 		end
     end)
 end
@@ -453,7 +461,9 @@ local function ActionVehicle(plate, action)
             QBCore.Functions.TriggerCallback("qb-parking:server:vehicle_action", function(callback)
                 if callback.status then
                     FreezeEntityPosition(LocalVehicles[i].entity, false)
-                    DeleteEntity(LocalVehicles[i].entity)
+                    if action == 'impound' then
+                        DeleteEntity(LocalVehicles[i].entity)
+                    end
                     table.remove(LocalVehicles, i)
                 end
             end, LocalVehicles[i].plate, action)
@@ -513,6 +523,7 @@ RegisterNetEvent("qb-parking:client:impound",  function(plate)
 end)
 
 RegisterNetEvent("qb-parking:client:stolen",  function(plate)
+    local tmpPlate = plate 
     ActionVehicle(plate, 'stolen')
 end)
 
@@ -630,4 +641,3 @@ CreateThread(function()
         end
     end
 end)
-

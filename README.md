@@ -61,6 +61,7 @@ This is my second mod i make public, so please by kind to my 😁 i still have m
 - 👉 Typ "/park-names if you want to display the names ontop of the vehicle that is parked. (Users and Admins)
 - 👉 Typ "/park-notification" to turn on or of the phone notification (Users and Admins)
 - 👉 Typ "/park-system" if you want to turn on or off the system. (Admin Only)
+- 👉 Typ "/park-usevip" to turn on and of the vip system
 - 👉 Typ "/park-addvip [id] [amount]" if you want to add a vip. (Admin Only)
 - 👉 Typ "/park-removevip [id]" if you want to remove a vip. (Admin Only)
 - 👉 If you want to use the F5 button, you must add it to your /binds and add on F5 the word "park"
@@ -134,94 +135,45 @@ end)
 ````
 
 
-## ⚙️ Database Table
-````sql
-CREATE TABLE `player_parking`  (
-  `id` int(10) NOT NULL AUTO_INCREMENT,
-  `citizenid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `citizenname` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `model` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `plate` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `fuel` int(15) NOT NULL DEFAULT 0,
-  `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
-  `time` bigint(20) NOT NULL,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
-````
-
-````sql
-CREATE TABLE IF NOT EXISTS `player_parking_vips` (
-  `id` int(10) NOT NULL AUTO_INCREMENT,
-  `citizenid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `citizenname` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `maxparking` int(5) NOT NULL DEFAULT 0,
-  `hasparked` int(5) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
-
-````
-
-## 🤬 If you have issues with impound and fuel, then replace this code.
-- Go to resources[qb]/qb-policejob/client/job.lua go to line 122.
-- Find 👇
-````lua
-function TakeOutImpound(vehicle)
-    local coords = Config.Locations["impound"][currentGarage]
-    if coords then
-        QBCore.Functions.SpawnVehicle(vehicle.vehicle, function(veh)
-            QBCore.Functions.TriggerCallback('qb-garage:server:GetVehicleProperties', function(properties)
-                QBCore.Functions.SetVehicleProperties(veh, properties)
-                SetVehicleNumberPlateText(veh, vehicle.plate)
-                SetEntityHeading(veh, coords.w)
-                exports['cc-fuel']:SetFuel(veh, vehicle.fuel)
-                doCarDamage(veh, vehicle)
-                TriggerServerEvent('police:server:TakeOutImpound',vehicle.plate)
-                closeMenuFull()
-                TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)
-                TriggerEvent("vehiclekeys:client:SetOwner", QBCore.Functions.GetPlate(veh))
-                SetVehicleEngineOn(veh, true, true)
-            end, vehicle.plate)
-        end, coords, true)
-    end
-end
-````
-
-- Replace 👇
-````lua
-function TakeOutImpound(vehicle)
-    local coords = Config.Locations["impound"][currentGarage]
-    if coords then
-        QBCore.Functions.SpawnVehicle(vehicle.vehicle, function(veh)
-            QBCore.Functions.TriggerCallback('qb-garage:server:GetVehicleProperties', function(properties)
-                QBCore.Functions.SetVehicleProperties(veh, properties)
-                SetVehicleNumberPlateText(veh, vehicle.plate)
-                SetEntityHeading(veh, coords.w)
-                exports['cc-fuel']:SetFuel(veh, 100.0) -- The Change
-                doCarDamage(veh, vehicle)
-                TriggerServerEvent('police:server:TakeOutImpound',vehicle.plate)
-                closeMenuFull()
-                TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)
-                TriggerEvent("vehiclekeys:client:SetOwner", QBCore.Functions.GetPlate(veh))
-                SetVehicleEngineOn(veh, true, true)
-            end, vehicle.plate)
-        end, coords, true)
-    end
-end
-````
-
 ## Stolen Trigger, when the vehicle gets stolen by a other player with picklock
+- Added below -> TriggerEvent("qb-parking:client:stolen", lockpickedPlate)
 ```lua
- TriggerEvent("qb-parking:client:stolen", plate) 
+
+-- resources/[qb]/qb-vehiclekeys/client.lua line 165 change it with this code.
+local function lockpickFinish(success)
+    local ped = PlayerPedId()
+    local pos = GetEntityCoords(ped)
+    local vehicle = QBCore.Functions.GetClosestVehicle(pos)
+    local chance = math.random()
+    if success then
+        TriggerServerEvent('hud:server:GainStress', math.random(1, 4))
+        QBCore.Functions.Notify('Opened Door!', 'success')
+        SetVehicleDoorsLocked(vehicle, 1)
+        lockpicked = true
+        lockpickedPlate = QBCore.Functions.GetPlate(vehicle)
+        TriggerEvent("qb-parking:client:stolen", lockpickedPlate) -- <---------------- HERE !!!
+    else
+        PoliceCall()
+        TriggerServerEvent('hud:server:GainStress', math.random(1, 4))
+        QBCore.Functions.Notify('Someone Called The Police!', 'error')
+    end
+    if usingAdvanced then
+        if chance <= Config.RemoveLockpickAdvanced then
+            TriggerEvent('inventory:client:ItemBox', QBCore.Shared.Items["advancedlockpick"], "remove")
+            TriggerServerEvent("QBCore:Server:RemoveItem", "advancedlockpick", 1)
+        end
+    else
+        if chance <= Config.RemoveLockpickNormal then
+            TriggerEvent('inventory:client:ItemBox', QBCore.Shared.Items["lockpick"], "remove")
+            TriggerServerEvent("QBCore:Server:RemoveItem", "lockpick", 1)
+        end
+    end
+end
 ```
 
 ## Impound Trigger, to unpark the vehicle.
 ```lua
  TriggerEvent("qb-parking:client:impound", plate) 
-```
-
-## Unpark Trigger, to unpark the vehicle, just for other garages scripts.
-```lua
- TriggerEvent("qb-parking:client:unpark", plate) 
 ```
 
 ## 👮‍♂️ Impound trigger
@@ -267,6 +219,38 @@ RegisterNetEvent('police:client:ImpoundVehicle', function(fullImpound, price)
 end)
 ```
 
+## Unpark Trigger, to unpark the vehicle, just for other garages scripts.
+```lua
+ TriggerEvent("qb-parking:client:unpark", plate) 
+```
+
+
+## ⚙️ Database Table
+````sql
+CREATE TABLE `player_parking`  (
+  `id` int(10) NOT NULL AUTO_INCREMENT,
+  `citizenid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `citizenname` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `model` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `plate` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fuel` int(15) NOT NULL DEFAULT 0,
+  `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+  `time` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+````
+
+````sql
+CREATE TABLE IF NOT EXISTS `player_parking_vips` (
+  `id` int(10) NOT NULL AUTO_INCREMENT,
+  `citizenid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `citizenname` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `maxparking` int(5) NOT NULL DEFAULT 0,
+  `hasparked` int(5) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+````
 
 ## ⚙️ To get a other languages.
 - 1: copy a file from the resources[qb]/qb-parking/locales directory
