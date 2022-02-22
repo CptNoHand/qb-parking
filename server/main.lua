@@ -312,9 +312,10 @@ QBCore.Functions.CreateCallback("qb-parking:server:vehicle_action", function(sou
 				["@plate"] = plate,
 			})	
 			if action == 'impound' then
-				MySQL.Async.execute('UPDATE player_vehicles SET state = 2 WHERE plate = @plate AND citizenid = @citizenid', {
+				MySQL.Async.execute('UPDATE player_vehicles SET state = 2, garage = @garage WHERE plate = @plate AND citizenid = @citizenid', {
 					["@plate"]     = plate,
-					["@citizenid"] = rs[1].citizenid
+					["@citizenid"] = rs[1].citizenid,
+					["@garage"]    = 'impoundlot',
 				})
 			end
 			if action ~= 'impound' then
@@ -339,6 +340,7 @@ QBCore.Functions.CreateCallback("qb-parking:server:vehicle_action", function(sou
     end)
 end)
 
+------------------------------------------------------Admin Commands-------------------------------------------------
 -- Save vip player to database
 QBCore.Commands.Add(Config.Command.addvip, Lang:t("commands.addvip"), {{name='ID', help='The id of the player you want to add.'}, {name='Amount', help='The max vehicles amount a player can park'}}, true, function(source, args)
 	if args[1] and tonumber(args[1]) > 0 then
@@ -394,11 +396,12 @@ end, 'admin')
 QBCore.Commands.Add(Config.Command.usevip, "Park VIP System On/Off", {}, true, function(source)
 	UseOnlyForVipPlayers = not UseOnlyForVipPlayers
 	if UseOnlyForVipPlayers then
-		TriggerClientEvent('QBCore:Notify', source, Lang:t('system.enable', {type = "vip"}), "success")
+		TriggerClientEvent('QBCore:Notify', source, Lang:t('system.enable', {type = "vip only"}), "success")
 	else
-		TriggerClientEvent('QBCore:Notify', source, Lang:t('system.disable', {type = "vip"}), "error")
+		TriggerClientEvent('QBCore:Notify', source, Lang:t('system.disable', {type = "vip only"}), "error")
 	end
 end, 'admin')
+
 
 -------------------------------------------------------------------------------------------------
 
@@ -417,7 +420,7 @@ AddEventHandler('onResourceStart', function(resource)
 						if type(rs) == 'table' and #rs > 0 then
 							for _, v in pairs(rs) do
 								MySQL.Async.execute('DELETE FROM player_parking WHERE plate = @plate', {["@plate"] = vehicle.plate})
-								if UseOnlyForVipPlayers then -- only allow for vip players
+								if UseOnlyForVipPlayers then -- only for vip players
 									MySQL.Async.fetchAll("SELECT * FROM player_parking_vips WHERE citizenid = @citizenid", {
 										['@citizenid'] = vehicle.citizenid,
 									}, function(park)
