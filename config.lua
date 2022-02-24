@@ -1,6 +1,6 @@
 Config                        = {}
 
-Config.UseParkingBlips        = true         -- 👉 Default true
+Config.UseParkingBlips        = false         -- 👉 Default true
 
 -- 👇 Sometime the vehicle spawn on top of each other and to avoid this you can use this delay below.
 Config.UseSpawnDelay          = true         -- 👉 Default true, if your vehicles spawn on top of each other, set this to true
