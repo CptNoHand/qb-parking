@@ -2,12 +2,14 @@
 --[[      QBCore Realistic Parking Script by MaDHouSe      ]]--
 --[[ ===================================================== ]]--
 
-local QBCore, updateavail, curVersion,responseText = exports['qb-core']:GetCoreObject(), false, 0, 0
+local QBCore        = exports['qb-core']:GetCoreObject()
+local updateavail   = false
+local ParkOwnerName = nil
 
 -- Get Player username
 local function GetUsername(player)
 	local tmpName = player.PlayerData.name
-	if Config.UseRoleplayName then
+	if Config.useRoleplayName then
 		tmpName = player.PlayerData.charinfo.firstname ..' '.. player.PlayerData.charinfo.lastname
 	end
     return tmpName
@@ -22,7 +24,16 @@ end
 local function FindPlayerVehicles(citizenid, cb)
     local vehicles = {}
     MySQL.Async.fetchAll("SELECT * FROM player_vehicles WHERE citizenid = @citizenid", {['@citizenid'] = citizenid}, function(rs)
-        for k, v in pairs(rs) do vehicles[#vehicles+1] = { vehicle = json.decode(v.data), plate = v.plate, citizenid = v.citizenid, citizenname = v.citizenname, model = v.model, fuel = v.fuel } end
+        for k, v in pairs(rs) do
+			vehicles[#vehicles+1] = {
+				vehicle     = json.decode(v.data),
+				plate       = v.plate,
+				citizenid   = v.citizenid,
+				citizenname = v.citizenname,
+				model       = v.model,
+				fuel        = v.fuel,
+			}
+        end
         cb(vehicles)
     end)
 end
@@ -34,7 +45,15 @@ local function RefreshVehicles(src)
         MySQL.Async.fetchAll("SELECT * FROM player_parking", {}, function(rs)
         if type(rs) == 'table' and #rs > 0 then
             for k, v in pairs(rs) do
-                vehicles[#vehicles+1] = { vehicle = json.decode(v.data), plate = v.plate, citizenid = v.citizenid, citizenname = v.citizenname, model = v.model, modelname = v.modelname,fuel = v.fuel }
+                vehicles[#vehicles+1] = {
+                    vehicle     = json.decode(v.data),
+                    plate       = v.plate,
+                    citizenid   = v.citizenid,
+                    citizenname = v.citizenname,
+                    model       = v.model,
+					modelname   = v.modelname,
+					fuel        = v.fuel,
+                }
                 if QBCore.Functions.GetPlayer(src) ~= nil and QBCore.Functions.GetPlayer(src).PlayerData.citizenid == v.citizenid then
 					TriggerClientEvent('qb-parking:client:addkey', v.plate, v.citizenid) 
                 end
@@ -44,8 +63,7 @@ local function RefreshVehicles(src)
     end)
 end
 
--- Version Check
-local function CheckVersion(err, responseText, headers)
+local function checkVersion(err, responseText, headers)
     curVersion = LoadResourceFile(GetCurrentResourceName(), "version")
     if responseText == nil then
         print("^1"..resourceName.." check for updates failed ^7")
@@ -66,55 +84,16 @@ local function CheckVersion(err, responseText, headers)
     end
 end
 
-local function addZeroForLessThan10(number)
-	if number < 10 then
-		return 0 .. number
-	else
-		return number
-	end
-end
-
-local function generateDateTime()
-	local dateTimeTable = os.date('*t')
-	local dateTime = 'Year:'..dateTimeTable.year .. ' Month:' .. addZeroForLessThan10(dateTimeTable.month) .. ' Day:' .. addZeroForLessThan10(dateTimeTable.day).. ' Time:' .. addZeroForLessThan10(dateTimeTable.hour) .. ':' ..  addZeroForLessThan10(dateTimeTable.min) .. ':' .. addZeroForLessThan10(dateTimeTable.sec)
-	return dateTime
-end
-   
-
-
-   
--- Create a park location
-local function CreateParkingLocation(source, config, id, parkname, display, radius, cost, job, marker, markerOffset, parktype)
-	local citizenid = 0
-    local cid = 0
-	if tonumber(id) > 0 then 
-		cid = tonumber(id) 
-		if cid ~= 0 then citizenid = QBCore.Functions.GetPlayer(cid).PlayerData.citizenid end
-	end
-	local sender = QBCore.Functions.GetPlayer(source).PlayerData
-	local coords = vector3(GetEntityCoords(GetPlayerPed(source)).x, GetEntityCoords(GetPlayerPed(source)).y, GetEntityCoords(GetPlayerPed(source)).z)
-    local path = GetResourcePath(GetCurrentResourceName())
-	if config ~= '' then path = path:gsub('//', '/')..'/configs/'..string.gsub(config, ".lua", "")..'.lua' else path = path:gsub('//', '/')..'/config.lua' end
-    local file = io.open(path, 'a+')
-    local label = '\n-- '..parkname.. ' created by '..sender.name..' time: '..generateDateTime()..'\nConfig.ReservedParkList["'..parkname..'"] = {\n    ["name"]       = "'..parkname..'",\n    ["display"]    = "'..display..'",\n    ["citizenid"]  = "'..citizenid..'",\n    ["cost"]       = "'..cost..'",\n    ["job"]        = "'..job..'",\n    ["radius"]     = '..radius..'.0,\n    ["parktype"]   = "'..parktype..'",\n    ["marker"]     = '..marker..',\n    ["coords"]     = '..coords..',\n    ["markcoords"] = '..markerOffset..',\n}'
-	file:write(label)
-   	file:close()
-	local data = {}
-	data = {name = parkname, display= display, citizenid = citizenid, cost = cost, job = job, radius = radius, parktype = parktype, marker = marker, coords = coords, markcoords = markerOffset}
-	Config.ReservedParkList[parkname] = data
-	TriggerClientEvent('qb-parking:client:newParkConfigAdded', -1, parkname, data)
-end
-
 -- Save the car to database
 QBCore.Functions.CreateCallback("qb-parking:server:save", function(source, cb, vehicleData)
-    if Config.UseParkingSystem then
-		local src = source
-		local Player = QBCore.Functions.GetPlayer(src)
-		local plate = vehicleData.plate
+    if UseParkingSystem then
+		local src     = source
+		local Player  = QBCore.Functions.GetPlayer(src)
+		local plate   = vehicleData.plate
 		local isFound = false
-		if Config.UseOnlyForVipPlayers then -- only allow for vip players
+		if UseOnlyForVipPlayers then -- only allow for vip players
 			MySQL.Async.fetchAll("SELECT * FROM player_parking_vips WHERE citizenid = @citizenid", {
-				['@citizenid'] = GetCitizenid(Player)
+				['@citizenid'] = GetCitizenid(Player),
 			}, function(rs)
 				if type(rs) == 'table' and #rs > 0 then
 					FindPlayerVehicles(GetCitizenid(Player), function(vehicles)
@@ -126,37 +105,55 @@ QBCore.Functions.CreateCallback("qb-parking:server:save", function(source, cb, v
 						if isFound then
 							MySQL.Async.fetchAll("SELECT * FROM player_parking WHERE citizenid = @citizenid AND plate = @plate", {
 								['@citizenid'] = GetCitizenid(Player),
-								['@plate'] = plate
+								['@plate']     = plate
 							}, function(rs)
 								if type(rs) == 'table' and #rs > 0 then
-									cb({status = false, message = Lang:t("info.car_already_parked")})
+									cb({
+										status  = false,
+										message = Lang:t("info.car_already_parked"),
+									})
 								else
-									MySQL.Async.execute("INSERT INTO player_parking (citizenid, citizenname, plate, fuel, oil, model, modelname, data, time) VALUES (@citizenid, @citizenname, @plate, @fuel, @oil, @model, @modelname, @data, @time)", {
-										["@citizenid"] = GetCitizenid(Player),
+									MySQL.Async.execute("INSERT INTO player_parking (citizenid, citizenname, plate, fuel, model, modelname, data, time) VALUES (@citizenid, @citizenname, @plate, @fuel, @model, @modelname, @data, @time)", {
+										["@citizenid"]   = GetCitizenid(Player),
 										["@citizenname"] = GetUsername(Player),
-										["@plate"] = plate,
-										["@fuel"] = vehicleData.fuel,
-										["@oil"] = vehicleData.oil,
-										['@model'] = vehicleData.model,
-										["@modelname"] = vehicleData.modelname,
-										["@data"] = json.encode(vehicleData),
-										["@time"] = os.time(),
+										["@plate"]       = plate,
+										["@fuel"]        = vehicleData.fuel,
+										['@model']       = vehicleData.model,
+										["@modelname"]   = vehicleData.modelname,
+										["@data"]        = json.encode(vehicleData),
+										["@time"]        = os.time(),
 									})
 									MySQL.Async.execute('UPDATE player_vehicles SET state = 3 WHERE plate = @plate AND citizenid = @citizenid', {
-										["@plate"] = plate,
-										["@citizenid"] = GetCitizenid(Player)
+										["@plate"]       = plate,
+										["@citizenid"]   = GetCitizenid(Player)
 									})
-									Wait(1000)
-									cb({status = true, message = Lang:t("success.parked")})
-									TriggerClientEvent("qb-parking:client:addVehicle", -1, {vehicle = vehicleData, plate = plate, fuel = vehicleData.fuel, oil = vehicleData.oil, citizenid = GetCitizenid(Player), citizenname = GetUsername(Player), model = vehicleData.model, modelname = vehicleData.modelname})
+									cb({ 
+										status  = true, 
+										message = Lang:t("success.parked"),
+									})
+									TriggerClientEvent("qb-parking:client:addVehicle", -1, {
+										vehicle     = vehicleData,
+										plate       = plate, 
+										fuel        = vehicleData.fuel,
+										citizenid   = GetCitizenid(Player), 
+										citizenname = GetUsername(Player),
+										model       = vehicleData.model,
+										modelname   = vehicleData.modelname,
+									})
 								end
 							end)
 						else 
-							cb({status = false, message = Lang:t("info.must_own_car")})
+							cb({
+								status  = false,
+								message = Lang:t("info.must_own_car"),
+							})
 						end
 					end)
 				else
-					cb({status = false, message = Lang:t("system.no_permission")})
+					cb({
+						status  = false,
+						message = Lang:t("system.no_permission"),
+					})
 				end
 			end)
 		else 
@@ -169,44 +166,62 @@ QBCore.Functions.CreateCallback("qb-parking:server:save", function(source, cb, v
 				if isFound then
 					MySQL.Async.fetchAll("SELECT * FROM player_parking WHERE citizenid = @citizenid AND plate = @plate", {
 						['@citizenid'] = GetCitizenid(Player),
-						['@plate'] = plate
+						['@plate']     = plate
 					}, function(rs)
 						if type(rs) == 'table' and #rs > 0 then
-							cb({status = false, message = Lang:t("info.car_already_parked")})
+							cb({
+								status  = false,
+								message = Lang:t("info.car_already_parked"),
+							})
 						else
-							MySQL.Async.execute("INSERT INTO player_parking (citizenid, citizenname, plate, fuel, oil, model, modelname, data, time) VALUES (@citizenid, @citizenname, @plate, @fuel, @oil, @model, @modelname, @data, @time)", {
-								["@citizenid"] = GetCitizenid(Player),
+							MySQL.Async.execute("INSERT INTO player_parking (citizenid, citizenname, plate, fuel, model, modelname, data, time) VALUES (@citizenid, @citizenname, @plate, @fuel, @model, @modelname, @data, @time)", {
+								["@citizenid"]   = GetCitizenid(Player),
 								["@citizenname"] = GetUsername(Player),
-								["@plate"] = plate,
-								["@fuel"] = vehicleData.fuel,
-								["@oil"] = vehicleData.oil,
-								['@model'] = vehicleData.model,
-								["@modelname"] = vehicleData.modelname,
-								["@data"] = json.encode(vehicleData),
-								["@time"] = os.time(),
+								["@plate"]       = plate,
+								["@fuel"]        = vehicleData.fuel,
+								['@model']       = vehicleData.model,
+								["@modelname"]   = vehicleData.modelname,
+								["@data"]        = json.encode(vehicleData),
+								["@time"]        = os.time(),
 							})
 							MySQL.Async.execute('UPDATE player_vehicles SET state = 3 WHERE plate = @plate AND citizenid = @citizenid', {
-								["@plate"] = plate,
-								["@citizenid"] = GetCitizenid(Player)
+								["@plate"]       = plate,
+								["@citizenid"]   = GetCitizenid(Player)
 							})
-							Wait(1000)
-							cb({status = true, message = Lang:t("success.parked")})
-							TriggerClientEvent("qb-parking:client:addVehicle", -1, {vehicle = vehicleData, plate = plate, fuel = vehicleData.fuel, oil = vehicleData.oil, citizenid = GetCitizenid(Player), citizenname = GetUsername(Player), model = vehicleData.model, modelname = vehicleData.modelname})
+							cb({ 
+								status  = true, 
+								message = Lang:t("success.parked"),
+							})
+							TriggerClientEvent("qb-parking:client:addVehicle", -1, {
+								vehicle     = vehicleData,
+								plate       = plate, 
+								fuel        = vehicleData.fuel,
+								citizenid   = GetCitizenid(Player), 
+								citizenname = GetUsername(Player),
+								model       = vehicleData.model,
+								modelname   = vehicleData.modelname,
+							})
 						end
 					end)	
 				else 
-					cb({status = false, message = Lang:t("info.must_own_car")})
+					cb({
+						status  = false,
+						message = Lang:t("info.must_own_car"),
+					})
 				end
 			end)
 		end
 	else 
-		cb({status = false, message = Lang:t("system.offline")})
+		cb({
+			status  = false,
+			message = Lang:t("system.offline"),
+		})
     end
 end)
 
 -- When player request to drive the car
 QBCore.Functions.CreateCallback("qb-parking:server:drive", function(source, cb, vehicleData)
-    if Config.UseParkingSystem then
+    if UseParkingSystem then
 		local src = source
 		local Player = QBCore.Functions.GetPlayer(src)
 		local plate = vehicleData.plate
@@ -231,21 +246,30 @@ QBCore.Functions.CreateCallback("qb-parking:server:drive", function(source, cb, 
 							["@plate"]     = plate,
 							["@citizenid"] = GetCitizenid(Player)
 						})
-						Wait(1000)
-						cb({status = true, message = Lang:t("info.has_take_the_car"), vehicle = json.decode(rs[1].data), plate = rs[1].plate, fuel = rs[1].fuel, oil = rs[1].oil, citizenid = GetCitizenid(Player), citizenname = GetUsername(Player), model = rs[1].model, modelname = rs[1].modelname})				
+						cb({
+							status  = true,
+							message = Lang:t("info.has_take_the_car"),
+							data    = json.decode(rs[1].data),
+							fuel    = rs[1].fuel,
+						})
 						TriggerClientEvent("qb-parking:client:deleteVehicle", -1, { plate = plate })
 					end
 				end)
 			else
-				cb({status = false, message = Lang:t("info.must_own_car")})
+				cb({
+					status  = false,
+					message = Lang:t("info.must_own_car"),
+				})
 			end
 		end)
     else 
-		cb({status = false, message = Lang:t("system.offline")})
+		cb({
+			status  = false,
+			message = Lang:t("system.offline"),
+		})
     end
 end)
 
--- vehicle action, this can be impound sloten or unpark the vehicle
 QBCore.Functions.CreateCallback("qb-parking:server:vehicle_action", function(source, cb, plate, action)
     MySQL.Async.fetchAll("SELECT * FROM player_parking WHERE plate = @plate", {
 		['@plate'] = plate
@@ -266,42 +290,25 @@ QBCore.Functions.CreateCallback("qb-parking:server:vehicle_action", function(sou
 					["@plate"] = plate,
 				})
 			end
-			cb({ status = true })
+			cb({ status  = true })
 			TriggerClientEvent("qb-parking:client:deleteVehicle", -1, { plate = plate })
 		else
-			cb({status = false, message = Lang:t("info.car_not_found")})
+			cb({
+				status  = false,
+				message = Lang:t("info.car_not_found"),
+			})
 			print(Lang:t("error"))
 		end
     end)
 end)
 
--- Pay for the parking space
-QBCore.Functions.CreateCallback('qb-parking:server:payparkspace', function(source, cb, cost)
-    local Player = QBCore.Functions.GetPlayer(source)
-    if Player.Functions.RemoveMoney("cash", cost, "park-spot-paid") then
-		cb({status = true, message = Lang:t('info.paid_park_space', { paid = cost }) })
-    else
-		if Player.Functions.RemoveMoney("bank", cost, "park-spot-paid") then
-			cb({status = true, message = Lang:t('info.paid_park_space', { paid = cost }) })
-		else
-			cb({status = false, message = Lang:t('error.not_enough_money')})
-		end
-    end
-end)
-
--- has the player permission
-QBCore.Functions.CreateCallback('qb-parking:server:haspermission', function(source, cb)
-    local src = source
-    if QBCore.Functions.HasPermission(src, 'admin') then
-        cb(true)
-    else
-        cb(false)
-    end
-end)
-
 -- Save vip player to database
-QBCore.Commands.Add(Config.Command.addvip, Lang:t("commands.addvip"), {{name='ID', help='The id of the player you want to add.'}}, true, function(source, args)
+QBCore.Commands.Add(Config.Command.addvip, Lang:t("commands.addvip"), {{name='ID', help='The id of the player you want to add.'}, {name='Amount', help='The max vehicles amount a player can park'}}, true, function(source, args)
 	if args[1] and tonumber(args[1]) > 0 then
+		local amount = 0 
+		if args[2] and tonumber(args[2]) > 0 then
+			amount = args[2]
+		end
 		MySQL.Async.fetchAll("SELECT * FROM player_parking_vips WHERE citizenid = @citizenid", {
 			['@citizenid'] = GetCitizenid(QBCore.Functions.GetPlayer(tonumber(args[1]))),
 		}, function(rs)
@@ -318,7 +325,6 @@ QBCore.Commands.Add(Config.Command.addvip, Lang:t("commands.addvip"), {{name='ID
 	end
 end, 'admin')
 
--- Remove VIP
 QBCore.Commands.Add(Config.Command.removevip, Lang:t("commands.removevip"), {{name='ID', help='The id of the player you want to remove.'}}, true, function(source, args)
 	if args[1] and tonumber(args[1]) > 0 then
 		MySQL.Async.fetchAll("SELECT * FROM player_parking_vips WHERE citizenid = @citizenid", {
@@ -336,34 +342,22 @@ QBCore.Commands.Add(Config.Command.removevip, Lang:t("commands.removevip"), {{na
 	end
 end, 'admin')
 
--- Turn System On/Off
 QBCore.Commands.Add(Config.Command.system, "Park System On/Off", {}, true, function(source)
-	Config.UseParkingSystem = not Config.UseParkingSystem
-	if Config.UseParkingSystem then
+	UseParkingSystem = not UseParkingSystem
+	if UseParkingSystem then
 		TriggerClientEvent('QBCore:Notify', source, Lang:t('system.enable', {type = "system"}), "success")
 	else
 		TriggerClientEvent('QBCore:Notify', source, Lang:t('system.disable', {type = "system"}), "error")
 	end
 end, 'admin')
 
--- Turn VIP System On/Off
 QBCore.Commands.Add(Config.Command.usevip, "Park VIP System On/Off", {}, true, function(source)
-	Config.UseOnlyForVipPlayers = not Config.UseOnlyForVipPlayers
-	if Config.UseOnlyForVipPlayers then
+	UseOnlyForVipPlayers = not UseOnlyForVipPlayers
+	if UseOnlyForVipPlayers then
 		TriggerClientEvent('QBCore:Notify', source, Lang:t('system.enable', {type = "vip only"}), "success")
 	else
 		TriggerClientEvent('QBCore:Notify', source, Lang:t('system.disable', {type = "vip only"}), "error")
 	end
-end, 'admin')
-
--- Create mode, NUI Menu
-QBCore.Commands.Add(Config.Command.createmenu, "Open park create menu", {}, true, function(source)
-	TriggerClientEvent("qb-parking:client:openmenu", source)
-end, 'admin')
-
--- Build Mode, to place markers
-QBCore.Commands.Add(Config.Command.buildmode, "Change build Mode", {}, true, function(source)
-	TriggerClientEvent("qb-parking:client:create", source)
 end, 'admin')
 
 -- Reset state and counting to stay in sync.
@@ -371,7 +365,7 @@ AddEventHandler('onResourceStart', function(resource)
     if resource == GetCurrentResourceName() then
         Wait(2000)
 		print("[qb-parking] - parked vehicles state check reset.")
-		MySQL.Async.fetchAll("SELECT * FROM player_vehicles WHERE state = 0 or state = 3", {}, function(rs)
+		MySQL.Async.fetchAll("SELECT * FROM player_vehicles WHERE state = @state", {["@state"] = 3}, function(rs)
 			if type(rs) == 'table' and #rs > 0 then
 				for _, v in pairs(rs) do
 					MySQL.Async.fetchAll("SELECT * FROM player_parking WHERE plate = @plate", {
@@ -391,7 +385,7 @@ if Config.CheckForUpdates then
     Citizen.CreateThread( function()
         updatePath   = "/MaDHouSe79/qb-parking"
         resourceName = "qb-parking ("..GetCurrentResourceName()..")"
-        PerformHttpRequest("https://raw.githubusercontent.com"..updatePath.."/master/version", CheckVersion, "GET")
+        PerformHttpRequest("https://raw.githubusercontent.com"..updatePath.."/master/version", checkVersion, "GET")
     end)
 end
 
@@ -407,13 +401,4 @@ end)
 -- When the client request to refresh the vehicles.
 RegisterServerEvent('qb-parking:server:refreshVehicles', function(parkingName)
     RefreshVehicles(source)
-end)
-
--- Create new parking space.
-RegisterServerEvent('qb-parking:server:AddNewParkingSpot', function(source, data, markerOffset)
-	if data.config == "" or data.cid == "" or data.parkname == "" then
-		TriggerClientEvent('QBCore:Notify', source, "Parking space not saved", "error")
-	else
-		CreateParkingLocation(source, data.config, data.cid, data.parkname, data.display, data.radius, data.cost, data.job, data.marker, markerOffset, data.parktype)
-	end
 end)

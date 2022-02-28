@@ -20,11 +20,10 @@ local Translations = {
         ["vip_not_found"]       = "Player not found!",
         ["vip_add"]             = "Player %{username} is added as vip!",
         ["vip_remove"]          = "Player %{username} is removed as vip!",
-        ["max_allow_reached"]   = "The maximum number of parked vehicles for you is %{max}",
+        ["max_allow_reached"]   = "The maximum number of packed vehicles for you is %{max}",
         ["park_or_drive"]       = "Park or Drive",
-        ["already_reserved"]    = "This parking place has already been reserved.",
+        ["already_reserved"]    = "This parking place has already been reserved by %{name}",
         ["parked_blip_info"]    = "Parked: %{modelname}",
-        ["to_far_from_vehicle"] = "You are to far from the vehicle",
     },
     success = {
         ["parked"]              = "Fahrzeug geparkt",
@@ -45,7 +44,6 @@ local Translations = {
         ["stop_car"]            = "Stoppe dein Auto bevor du parkst",
         ["police_info"]         = "~r~Police~s~ Vehicle Info\n",
         ["citizen_info"]        = "~g~Citizen~s~ Vehicle Info\n",
-        ["paid_park_space"]     = "You rent this parking space for $%{paid} p/h",
     },
     mail = {
         ["sender"]              = "%{company}",

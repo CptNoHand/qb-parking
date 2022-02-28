@@ -9,15 +9,10 @@ shared_scripts {
     '@qb-core/shared/locale.lua',
     'locales/en.lua', -- change en to your language
     'config.lua',
-    'configs/*.lua',
+    'shared/variables.lua',
 }
 
 client_scripts {
-    '@PolyZone/client.lua',
-    '@PolyZone/BoxZone.lua',
-    '@PolyZone/EntityZone.lua',
-    '@PolyZone/CircleZone.lua',
-    '@PolyZone/ComboZone.lua',
     'client/main.lua',
 }
 
@@ -31,12 +26,5 @@ dependencies {
     'qb-core',
 }
 
-ui_page 'html/index.html'
-
-files {
-	'html/*.html',
-	'html/*.js',
-	'html/*.css',
-}
-
 lua54 'yes'
+

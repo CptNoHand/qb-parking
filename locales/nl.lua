@@ -22,9 +22,8 @@ local Translations = {
         ["vip_remove"]          = "Player %{username} is toegevoegd als vip!",
         ["max_allow_reached"]   = "Het maximale aantal bepakte voertuigen voor jouw is %{max}",
         ["park_or_drive"]       = "Park or Drive",
-        ["already_reserved"]    = "Deze parkeerplaats is al gereserveerd.",
+        ["already_reserved"]    = "Deze parkeerplaats is al gereserveerd door %{name}",
         ["parked_blip_info"]    = "Parked: %{modelname}",
-        ["to_far_from_vehicle"] = "You are to far from the vehicle",
     }, 
     success = {
         ["parked"]              = "Je voertuig is gepakeerd",
@@ -45,7 +44,6 @@ local Translations = {
         ["stop_car"]            = "Stop het voertuig voor dat je het wilt parkeren...",
         ["police_info"]         = "~r~Politie~s~ Voertuig Info\n",
         ["citizen_info"]        = "~g~Citizen~s~ Voertuig Info\n",
-        ["paid_park_space"]     = "Je huurt deze parkeer plek voor %{paid} p/h",
         
     },
     mail = {
