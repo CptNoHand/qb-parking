@@ -22,8 +22,9 @@ local Translations = {
         ["vip_remove"]          = "El jugador %{username} es removido del vip!",
         ["max_allow_reached"]   = "El número máximo de vehículos permitidos para usted es %{max}",
         ["park_or_drive"]       = "Estacionar o conducir",
-        ["already_reserved"]    = "This parking place has already been reserved by %{name}",
+        ["already_reserved"]    = "This parking place has already been reserved.",
         ["parked_blip_info"]    = "Parked: %{modelname}",
+        ["to_far_from_vehicle"] = "You are to far from the vehicle",
     },
     success = {
         ["parked"]              = "Tu vehiculo esta estacionado",
@@ -44,6 +45,7 @@ local Translations = {
         ["stop_car"]            = "Detenga su vehículo antes de estacionar",
         ["police_info"]         = "~r~Policia~s~ Información del vehículo\n",
         ["citizen_info"]        = "~g~Ciudadano~s~ Información del vehículo\n",
+        ["paid_park_space"]     = "You rent this parking space for $%{paid} p/h",
     },
     mail = {
         ["sender"]              = "%{company}",
